@@ -39,7 +39,7 @@ ax.set_xticks(x)
 ax.set_xticklabels(x, rotation=45)
 plt.tight_layout()
 plt.grid(True, linestyle='-', alpha=0.36)
-plt.show()
+#plt.show()
 
 
 # Visualización de tweets por hora ejercicio
@@ -54,7 +54,7 @@ plt.show()
 
 
 # 2- PALABRAS MAS REPETIDAS ULTIMOS 1000 TWEETS
-df_last_1000= df.sort_values('createdAt', ascending=False).head(1000)
+df_last_1000= df.sort_values('createdAt', ascending=False)
 
 def limpiar_texto(texto):
     texto = texto.lower()  # Convertir a minúsculas
@@ -63,11 +63,39 @@ def limpiar_texto(texto):
     texto = re.sub(r'[^a-z\s]', '', texto)  # Eliminar puntuación y caracteres especiales
     return texto.strip()
 
-df_last_1000['texto_limpio'] = df_last_1000['fullText'].apply(limpiar_texto)
-texto_completo = " ".join(df_last_1000['texto_limpio'].tolist())
-palabras= texto_completo.split()
-stop_words = set(stopwords.words('english'))
-palabras_filtradas = [palabra for palabra in palabras if palabra not in stop_words and len(palabra) > 1]
-contador_palabras = Counter(palabras_filtradas)
+df_last_1000['texto_limpio'] = df_last_1000['fullText'].apply(limpiar_texto)# convertir la columna en una lista de strings y unirlas en un solo string
+texto_completo = " ".join(df_last_1000['texto_limpio'].tolist())# convertir la columna en una lista de strings y unirlas en un solo string
+palabras= texto_completo.split()# dividir el texto en palabras individuales
+stop_words = set(stopwords.words('english'))# conjunto de palabras comunes en inglés
+palabras_filtradas = [palabra for palabra in palabras if palabra not in stop_words and len(palabra) > 2]# filtrar palabras comunes y de una sola letra
+contador_palabras = Counter(palabras_filtradas)# contar la frecuencia de cada palabra
+
+palabras_filtradas2 = [palabra for palabra in palabras if palabra not in stop_words and len(palabra) > 1 and palabra == "wow"]# filtrar palabras comunes y de una sola letra
+contador_palabras2 = Counter(palabras_filtradas2)# contar la frecuencia de cada palabra
+
 print("Las 10 palabras más comunes en los últimos 1000 tweets son:")
-print(contador_palabras.most_common(10))    
+print(contador_palabras.most_common(10))
+print(contador_palabras2.most_common(10))
+
+
+# 3- ANALISIS DE SENTIMIENTO
+top5 = df.sort_values('createdAt', ascending=False).head(5).copy()
+sia = SentimentIntensityAnalyzer()
+
+
+
+def classificar_sentimiento(texto):
+    score = sia.polarity_scores(texto)['compound'] # -1 (negativo) a 1 (positivo)
+    if score >= 0.05:
+        return "Positivo"
+    elif score <= -0.05:
+        return "Negativo"
+    else:
+        return "Neutral"
+
+top5['sentimiento'] = top5['fullText'].apply(lambda x: sia.polarity_scores(x)['compound'])# calcular el puntaje de sentimiento compuesto
+top5['clasificacion'] = top5['fullText'].apply(classificar_sentimiento)# clasificar el sentimiento
+
+print("Análisis de sentimiento de los últimos 5 tweets:")
+top5[['fullText','likeCount','sentimiento', 'clasificacion']].to_csv(r"C:\Users\mzbs\Documents\Curso Python\datasets\analisis_sentimiento_top5.csv", index=False)
+print(top5[['fullText','likeCount','sentimiento', 'clasificacion']])    
